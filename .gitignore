@@ -1,0 +1,5 @@
+# Node.js dependencies
+node_modules/
+
+# Jest snapshot files (tuỳ chọn, không bắt buộc nộp)
+*.snap
