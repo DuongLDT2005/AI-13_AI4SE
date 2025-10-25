@@ -1,111 +1,112 @@
-import Booking from "../src/booking";
+import Booking from "../src/booking.js";
+import { jest } from "@jest/globals";
 
-describe('Booking.validateHall() — using static data', () => {
+describe("Booking.validateHall()", () => {
     let booking;
-    let staticHallDAO;
+    let mockHallDAO;
+    let mockHall;
 
+    // ✅ Setup before each test
     beforeEach(() => {
-        // Static fake hall data (simulating database)
-        const halls = [
-            { hallID: 1, name: 'Grand Hall', minTable: 10, maxTable: 20 },
-            { hallID: 2, name: 'Mini Hall', minTable: 12, maxTable: 12 },
-            { hallID: 3, name: 'Economy Hall', minTable: 1, maxTable: 10 },
-        ];
-
-        // Simulated DAO with an async findById
-        staticHallDAO = {
-            findById: async (id) => halls.find((h) => h.hallID === id) || null,
+        mockHallDAO = {
+            findById: jest.fn(),
         };
 
-        // Default booking
+        mockHall = { hallID: 1, minTable: 5, maxTable: 15 };
+
         booking = new Booking({
             hallID: 1,
-            tableCount: 15,
+            tableCount: 10,
+            hallDAO: mockHallDAO,
         });
-
-        // Inject our static DAO
-        booking.hallDAO = staticHallDAO;
     });
 
-    afterAll(() => {
-        booking = null;
-        staticHallDAO = null;
+    // 🧹 Teardown after each test
+    afterEach(() => {
+        jest.clearAllMocks();
     });
 
-    // -------------------- HAPPY PATHS --------------------
+    // 1️⃣ Table count within range
+    it("✅ should resolve successfully when table count is within range", async () => {
+        mockHallDAO.findById.mockResolvedValue(mockHall);
 
-    test('✅ should pass when hall exists and tableCount is within valid range', async () => {
+        await expect(booking.validateHall()).resolves.toBeUndefined();
+        expect(mockHallDAO.findById).toHaveBeenCalledWith(1);
+    });
+
+    // 2️⃣ Table count equals minTable
+    it("✅ should resolve when table count equals minTable", async () => {
+        booking.tableCount = mockHall.minTable;
+        mockHallDAO.findById.mockResolvedValue(mockHall);
+
         await expect(booking.validateHall()).resolves.toBeUndefined();
     });
 
-    test('✅ should pass when tableCount equals hall.minTable (lower boundary)', async () => {
-        booking.tableCount = 10;
+    // 3️⃣ Table count equals maxTable
+    it("✅ should resolve when table count equals maxTable", async () => {
+        booking.tableCount = mockHall.maxTable;
+        mockHallDAO.findById.mockResolvedValue(mockHall);
+
         await expect(booking.validateHall()).resolves.toBeUndefined();
     });
 
-    test('✅ should pass when tableCount equals hall.maxTable (upper boundary)', async () => {
-        booking.tableCount = 20;
-        await expect(booking.validateHall()).resolves.toBeUndefined();
-    });
+    // 4️⃣ Below minimum table count
+    it("❌ should throw an error when table count is below minimum", async () => {
+        booking.tableCount = 4;
+        mockHallDAO.findById.mockResolvedValue(mockHall);
 
-    // -------------------- ERROR SCENARIOS --------------------
-
-    test('❌ should throw error when hall not found', async () => {
-        booking.hallID = 999; // Nonexistent hall
-        await expect(booking.validateHall()).rejects.toThrow('Hall not found for validation.');
-    });
-
-    test('❌ should throw error when tableCount is less than hall.minTable', async () => {
-        booking.tableCount = 9;
         await expect(booking.validateHall()).rejects.toThrow(
-            'Table count (9) must be between 10 and 20.'
+            "Table count (4) must be between 5 and 15."
         );
     });
 
-    test('❌ should throw error when tableCount is greater than hall.maxTable', async () => {
-        booking.tableCount = 21;
+    // 5️⃣ Above maximum table count
+    it("❌ should throw an error when table count is above maximum", async () => {
+        booking.tableCount = 16;
+        mockHallDAO.findById.mockResolvedValue(mockHall);
+
         await expect(booking.validateHall()).rejects.toThrow(
-            'Table count (21) must be between 10 and 20.'
+            "Table count (16) must be between 5 and 15."
         );
     });
 
-    test('❌ should throw error when hallID is undefined', async () => {
-        booking.hallID = undefined;
-        await expect(booking.validateHall()).rejects.toThrow('Hall not found for validation.');
-    });
-
-    test('❌ should throw error when tableCount is undefined', async () => {
+    // 6️⃣ tableCount missing (undefined)
+    it("❌ should throw an error when table count is missing (undefined)", async () => {
         booking.tableCount = undefined;
-        await expect(booking.validateHall()).rejects.toThrow('Table count is missing or invalid.');
-    });
 
-    test('✅ should pass when hall allows exactly one table count (min = max)', async () => {
-        booking.hallID = 2; // Mini Hall
-        booking.tableCount = 12;
-        await expect(booking.validateHall()).resolves.toBeUndefined();
-    });
-
-    test('❌ should throw when hall allows only one table count but mismatch', async () => {
-        booking.hallID = 2;
-        booking.tableCount = 13;
         await expect(booking.validateHall()).rejects.toThrow(
-            'Table count (13) must be between 12 and 12.'
+            "Table count is missing or invalid."
         );
+        expect(mockHallDAO.findById).not.toHaveBeenCalled();
     });
 
-    test('❌ should throw error when tableCount is negative', async () => {
-        booking.hallID = 3;
-        booking.tableCount = -5;
+    // 7️⃣ tableCount not a number (string)
+    it("❌ should throw an error when table count is not a number (string)", async () => {
+        booking.tableCount = "10";
+
         await expect(booking.validateHall()).rejects.toThrow(
-            'Table count (-5) must be between 1 and 10.'
+            "Table count is missing or invalid."
         );
+        expect(mockHallDAO.findById).not.toHaveBeenCalled();
     });
 
-    test('❌ should throw error when tableCount is zero (below min)', async () => {
-        booking.hallID = 3;
-        booking.tableCount = 0;
+    // 8️⃣ tableCount NaN
+    it("❌ should throw an error when table count is NaN", async () => {
+        booking.tableCount = NaN;
+
         await expect(booking.validateHall()).rejects.toThrow(
-            'Table count (0) must be between 1 and 10.'
+            "Table count is missing or invalid."
         );
+        expect(mockHallDAO.findById).not.toHaveBeenCalled();
+    });
+
+    // 9️⃣ Hall not found (DAO returns null)
+    it("❌ should throw an error when hall is not found", async () => {
+        mockHallDAO.findById.mockResolvedValue(null);
+
+        await expect(booking.validateHall()).rejects.toThrow(
+            "Hall not found for validation."
+        );
+        expect(mockHallDAO.findById).toHaveBeenCalledWith(1);
     });
 });

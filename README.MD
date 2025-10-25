@@ -1,181 +1,80 @@
-# Prompt Logs
-## Prompt 1
-### Input Prompt
-"Analyze this Booking class and identify all functions that need unit testing: 
-[Booking.js] 
-For each function, identify:
-1. Main functionality
-2. Input parameters and types
-3. Expected return values
-4. Potential edge cases
-5. Dependencies that need mocking
-Respond using concise bullet points for each function, covering all key details."
-### Output Prompt
-"Here’s a **comprehensive, concise unit-test analysis** of each function in the `Booking` class:
-
-#### 🧩 **1. validateRequiredEntities({ customer, eventType, hall, menu })**
-**Functionality:**
-Ensures all required foreign key entities exist and have valid IDs.
-**Inputs:**
-* `customer`, `eventType`, `hall`, `menu` → objects (each should contain an `ID` field).
-**Returns:**
-* `void` (throws `Error` on invalid/missing entities).
-**Edge Cases:**
-* Missing or `null` entity object.
-* Missing `ID` field (`customerID`, `hallID`, etc.).
-**Dependencies to mock:**
-* None (pure logic, no external calls).
-
-#### 🧩 **2. validateHall(hall)**
-**Functionality:**
-Checks if booking’s `tableCount` is within hall’s min–max limits.
-**Inputs:**
-* `hall`: object `{ minTable: number, maxTable: number }`.
-**Returns:**
-* `void` (throws `Error` if invalid).
-**Edge Cases:**
-* `tableCount` < `minTable` or > `maxTable`.
-* Missing hall properties.
-**Dependencies to mock:**
-* None.
-
-#### 🧩 **3. validateEventDate(systemSettings)**
-**Functionality:**
-Verifies event date is valid, within allowed time range (≥ min notice hours and ≤ 1 year).
-**Inputs:**
-* `systemSettings`: object `{ DEFAULT_MIN_BOOKING_NOTICE_HOURS?: string|number }`.
-**Returns:**
-* `void` (throws `Error` if date invalid or out of range).
-**Edge Cases:**
-* `eventDate` not in ISO format.
-* `eventDate` before current + minNoticeHours.
-* `eventDate` > 1 year ahead.
-* Invalid or missing `systemSettings`.
-**Dependencies to mock:**
-* `date-fns`: `addHours`, `addYears`, `parseISO`, `isBefore`.
-* `Date.now()` (mock system time).
-
-#### 🧩 **4. validateTimeSlot(isHallAvailable)**
-**Functionality:**
-Ensures time slot is valid and hall is available.
-**Inputs:**
-* `isHallAvailable`: boolean.
-**Returns:**
-* `void` (throws `Error` if invalid slot or unavailable).
-**Edge Cases:**
-* Missing `startTime` or `endTime`.
-* Invalid time slot not matching predefined slots.
-* `isHallAvailable = false`.
-**Dependencies to mock:**
-* None.
-
-#### 🧩 **5. validateDishes(dishesInMenu)**
-**Functionality:**
-Validates selected dishes exist in menu and meet category rules.
-**Inputs:**
-* `dishesInMenu`: array of dish objects `{ dishID, categoryID, requiredQuantity? }`.
-**Returns:**
-* `void` (throws `Error` if missing/invalid dishes).
-**Edge Cases:**
-* Empty or missing `this.dishes`.
-* Dish ID not in menu.
-* Category missing required dish count.
-**Dependencies to mock:**
-* `validateDishCategories` (can spy/mock to isolate logic).
-
-#### 🧩 **6. validateDishCategories(dishesInMenu)**
-**Functionality:**
-Ensures per-category minimum dish requirements are satisfied.
-**Inputs:**
-* `dishesInMenu`: array as above.
-**Returns:**
-* `void` (throws `Error` if category requirement unmet).
-**Edge Cases:**
-* Category with requiredQuantity > selected dishes.
-* Dish not found in menu.
-**Dependencies to mock:**
-* None.
-
-#### 🧩 **7. validateServices(allServices)**
-**Functionality:**
-Validates selected services exist and have valid quantities.
-**Inputs:**
-* `allServices`: array of service objects `{ serviceID, price?, ... }`.
-**Returns:**
-* `void` (throws `Error` for missing/invalid services).
-**Edge Cases:**
-* Invalid `serviceID`.
-* `quantity <= 0`.
-* Empty service list.
-**Dependencies to mock:**
-* None.
-
-#### 🧩 **8. calculateBasePrice(hall, menu)**
-**Functionality:**
-Calculates base price = hall.price + (menu.price × tableCount).
-**Inputs:**
-* `hall`: `{ price: number }`
-* `menu`: `{ price: number }`
-**Returns:**
-* Updates `this.originalPrice`.
-**Edge Cases:**
-* Missing hall or menu price.
-* `tableCount` = 0 or negative.
-**Dependencies to mock:**
-* None.
-
-#### 🧩 **9. applyPromotions(promotions)**
-**Functionality:**
-Applies promotions → updates discounts or free services.
-**Inputs:**
-* `promotions`: array of promo objects `{ discountType, discountValue, minTable?, freeServiceID? }`.
-**Returns:**
-* Updates `discountAmount`, `promotions`, and private `#freeServices`.
-**Edge Cases:**
-* Empty promotion list.
-* `discountType` invalid.
-* `tableCount` below `minTable`.
-* Multiple overlapping promotions.
-**Dependencies to mock:**
-* None (internal logic only).
-
-#### 🧩 **10. applyPaidServices(allServices)**
-**Functionality:**
-Adds paid service costs to `originalPrice`, ensuring no free duplicates.
-**Inputs:**
-* `allServices`: array of `{ serviceID, price }`.
-**Returns:**
-* Updates `services` and `originalPrice`.
-**Edge Cases:**
-* Service marked as free (in `#freeServices`).
-* Missing service info in `allServices`.
-* Invalid quantity or price.
-**Dependencies to mock:**
-* Access to private `#freeServices` (mock indirectly by calling `applyPromotions`).
-
-#### 🧩 **11. calculateTotals(systemSettings)**
-**Functionality:**
-Computes final totals after discounts and VAT.
-**Inputs:**
-* `systemSettings`: `{ VAT_RATE?: string|number }`.
-**Returns:**
-* Updates `VAT` and `totalAmount`.
-**Edge Cases:**
-* Missing VAT rate (defaults to 0.08).
-* Negative total after discount.
-* Large monetary values.
-**Dependencies to mock:**
-* None (math-only logic).
-
-✅ **Summary of Test Coverage**
-
-| Category           | Functions                                                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Validation**     | `validateRequiredEntities`, `validateHall`, `validateEventDate`, `validateTimeSlot`, `validateDishes`, `validateDishCategories`, `validateServices` |
-| **Calculation**    | `calculateBasePrice`, `applyPromotions`, `applyPaidServices`, `calculateTotals`                                                                     |
-| **Mocking needed** | `date-fns` (date logic), `Date.now()`, and optional spies for private sets or sub-validation calls                                                  |
+Here’s a **refined version of your README**, tailored for the unit testing project with **Booking Creation** as the core feature, while keeping it clear and GitHub-friendly:
 
 ---
 
-Would you like me to generate a **unit test plan table** (with test cases, expected results, and mock setup) for all these functions next?
-"
+# LifEvent
+
+**LifEvent** is an **online wedding restaurant booking and connection platform** designed to simplify the planning of weddings and special events. It provides an intuitive interface for both customers and restaurant owners, helping them manage bookings, view menus, and explore services seamlessly.
+
+## Core Feature for Unit Testing: Booking Creation
+
+This project focuses on **unit testing** the **Booking Creation** feature, which allows customers to:
+
+* Select **restaurant halls** and **menus**
+* Specify **event date** and **time slot**
+* Choose **dishes**, **services**, and apply **promotions**
+* Calculate **prices, discounts, VAT, and totals**
+
+Unit tests verify that the feature works correctly, handles edge cases, and is fully **isolated from the database** using mocked DAOs or static data.
+
+## Key Features
+
+* **Restaurant & Hall Browsing** – Search and filter venues by location, price, capacity, date, and promotions.
+* **Booking Management** – Customers can create, view, and manage their bookings.
+* **Menu & Service Selection** – View menus, select dishes and additional services, and apply promotions.
+* **Owner Management** – Owners can register, submit licenses, and manage halls, menus, and promotions.
+* **Admin Dashboard** – Admins can verify licenses, manage commissions, approve owners, and monitor system activities.
+* **Negotiation System** – Admins and owners can negotiate commission rates until approval.
+
+## Benefits
+
+* Ensures **robust booking logic** via unit tests.
+* Streamlines wedding planning with a centralized platform.
+* Provides transparency in pricing, availability, and promotions.
+
+## Tech Stack
+
+* **Frontend:** [Your frontend framework, e.g., React/Next.js]
+* **Backend:** Node.js with Express
+* **Database:** MySQL / MongoDB
+* **Testing:** Jest for unit testing (with mocked DAOs and static data)
+
+---
+
+## ⚙️ Testing
+
+**Jest** is used as the primary testing framework. The project includes NPM scripts for running, watching, and reporting tests.
+
+### 🏃 Testing Commands
+
+| Command                 | Description                        | Use Case                               |
+| :---------------------- | :--------------------------------- | :------------------------------------- |
+| `npm test`              | Run **all tests** once             | Final checks before commit or CI/CD    |
+| `npm run test:watch`    | Run tests in **watch mode**        | Active development, immediate feedback |
+| `npm run test:coverage` | Run tests with **coverage report** | Evaluate test coverage                 |
+
+### Usage
+
+**1. Run All Tests**
+
+```bash
+npm test
+```
+
+**2. Watch Mode**
+
+```bash
+npm run test:watch
+```
+
+* Runs tests initially and re-runs automatically on file changes.
+* Provides an interactive menu for filtering tests by file or name.
+
+**3. Generate Coverage Report**
+
+```bash
+npm run test:coverage
+```
+
+* Displays summary of lines, functions, branches, and statements coverage in terminal.
+* Generates an HTML report in `coverage/index.html` for detailed visualization.

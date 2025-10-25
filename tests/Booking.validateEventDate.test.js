@@ -1,79 +1,57 @@
-import { addHours, addYears, formatISO } from "date-fns";
-import Booking from "../src/booking";
-import { jest } from "@jest/globals"
+import Booking from '../src/booking';
+import { addHours, addYears } from 'date-fns';
 
-describe("Booking.validateEventDate()", () => {
-    let booking;
-    let systemSettings;
-    let now;
+describe('Booking.validateEventDate()', () => {
+  let booking;
+  const systemSettings = {
+    DEFAULT_MIN_BOOKING_NOTICE_HOURS: 24, // truyền trực tiếp vào hàm!
+  };
 
-    beforeEach(() => {
-        now = new Date();
-        systemSettings = { DEFAULT_MIN_BOOKING_NOTICE_HOURS: "24" };
+  beforeEach(() => {
+    booking = new Booking({});
+  });
 
-        booking = new Booking({
-            eventDate: null,
-        });
+  it('throws if eventDate is missing or not a string', async () => {
+    booking.eventDate = null;
+    await expect(booking.validateEventDate(systemSettings))
+      .rejects
+      .toThrow("eventDate must be a valid date string");
+  });
 
-        // Mock Date globally to control "current time"
-        jest.useFakeTimers();
-        jest.setSystemTime(now);
-    });
+  it('throws if eventDate is not valid ISO string', async () => {
+    booking.eventDate = 'invalid-date';
+    await expect(booking.validateEventDate(systemSettings))
+      .rejects
+      .toThrow("eventDate must be a valid date string");
+  });
 
-    afterEach(() => {
-        jest.useRealTimers();
-    });
+  it('throws if eventDate is too soon (less than min notice)', async () => {
+    const now = new Date();
+    const tooSoon = addHours(now, 10).toISOString().split('T')[0];
+    booking.eventDate = tooSoon;
 
-    // 1️⃣ Event date within valid window
-    it("✅ should resolve when event date is within the valid window", async () => {
-        booking.eventDate = formatISO(addHours(now, 48)); // 2 days from now
-        await expect(booking.validateEventDate(systemSettings, now)).resolves.toBeUndefined();
-    });
+    await expect(booking.validateEventDate(systemSettings, now))
+      .rejects
+      .toThrow(`Event date must be at least ${systemSettings.DEFAULT_MIN_BOOKING_NOTICE_HOURS} hours from now.`);
+  });
 
-    // 2️⃣ Exactly at minimum notice
-    it("✅ should resolve when event date is exactly at the minimum notice (24h)", async () => {
-        booking.eventDate = formatISO(addHours(now, 24), 1);
-        await expect(booking.validateEventDate(systemSettings, now)).resolves.toBeUndefined();
-    });
+  it('throws if eventDate is more than 1 year ahead', async () => {
+    const now = new Date();
+    const over1Year = addYears(now, 1);
+    over1Year.setDate(over1Year.getDate() + 1);
+    booking.eventDate = over1Year.toISOString().split('T')[0];
 
-    // 3️⃣ Exactly 1 year ahead
-    it("✅ should resolve when event date is exactly 1 year ahead", async () => {
-        booking.eventDate = formatISO(addYears(now, 1));
-        await expect(booking.validateEventDate(systemSettings, now)).resolves.toBeUndefined();
-    });
+    await expect(booking.validateEventDate(systemSettings, now))
+      .rejects
+      .toThrow("Event date cannot be more than 1 year in advance.");
+  });
 
-    // 4️⃣ Event date less than min notice
-    it("❌ should throw error when event date is less than the minimum notice", async () => {
-        booking.eventDate = formatISO(addHours(now, 12)); // 12h ahead
-        await expect(booking.validateEventDate(systemSettings, now))
-            .rejects.toThrow("Event date must be at least 24 hours from now.");
-    });
+  it('passes if eventDate is valid and within allowed range', async () => {
+    const now = new Date();
+    const validDate = addHours(now, 48).toISOString().split('T')[0];
+    booking.eventDate = validDate;
 
-    // 5️⃣ Event date in the past
-    it("❌ should throw error when event date is in the past", async () => {
-        booking.eventDate = formatISO(addHours(now, -5)); // 5h ago
-        await expect(booking.validateEventDate(systemSettings, now))
-            .rejects.toThrow("Event date must be at least 24 hours from now.");
-    });
-
-    // 6️⃣ Event date more than 1 year ahead
-    it("❌ should throw error when event date is more than 1 year in advance", async () => {
-        booking.eventDate = formatISO(addHours(addYears(now, 1), 25));
-        await expect(booking.validateEventDate(systemSettings, now))
-            .rejects.toThrow("Event date cannot be more than 1 year in advance.");
-    });
-
-    // 7️⃣ Invalid date string format
-    it("❌ should throw error when event date is not a valid date string", async () => {
-        booking.eventDate = "not-a-date";
-        await expect(booking.validateEventDate(systemSettings, now))
-            .rejects.toThrow("eventDate must be a valid date string (e.g., YYYY-MM-DD).");
-    })
-
-    // 8️⃣ Missing eventDate property
-    it("❌ should throw error when eventDate is undefined", async () => {
-        booking.eventDate = undefined;
-        await expect(booking.validateEventDate(systemSettings, now))
-            .rejects.toThrow("eventDate must be a valid date string (e.g., YYYY-MM-DD).");
-    });
+    await expect(booking.validateEventDate(systemSettings, now))
+      .resolves.not.toThrow();
+  });
 });

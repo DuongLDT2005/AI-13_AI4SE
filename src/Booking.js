@@ -1,4 +1,4 @@
-import { isBefore, addHours, addYears, parseISO, isValid as isValidDate } from 'date-fns';
+import { isBefore, addHours, addYears, parseISO, formatISO, isValid as isValidDate } from 'date-fns';
 
 /**
  * Enum for booking statuses.
@@ -32,11 +32,9 @@ class Booking {
     totalAmount;
     createdAt;
     isChecked;
-
     dishes = [];
     services = [];
     promotions = [];
-
     #freeServices = new Set();
     #vatRate = 0.08;
 
@@ -61,11 +59,11 @@ class Booking {
         dishes = [],
         services = [],
         promotions = [],
+        // ---------------- INJECTED DAOS ---------------- 
         customerDAO,
         eventTypeDAO,
         hallDAO,
-        menuDAO,
-    } = {}) {
+        menuDAO, } = {}) {
         Object.assign(this, {
             bookingID,
             customerID,
@@ -93,13 +91,13 @@ class Booking {
             menuDAO,
         });
     }
-
+    _addFreeServiceForTest(id) { this.#freeServices.add(id); }
+    getFreeServicesForTest() { return this.#freeServices; }
+    //#region VALIDATION
     // ---------------- VALIDATION ----------------
 
-    async validateRequiredEntities() {
-        if (!this.customerDAO || !this.eventTypeDAO || !this.hallDAO || !this.menuDAO)
-            throw new Error("DAO missing for validation.");
 
+    async validateRequiredEntities() {
         const customer = await this.customerDAO.findById(this.customerID);
         const eventType = await this.eventTypeDAO.findById(this.eventTypeID);
         const hall = await this.hallDAO.findById(this.hallID);
@@ -126,28 +124,30 @@ class Booking {
 
     async validateEventDate(systemSettings, now = new Date()) {
         const minNoticeHours = parseInt(systemSettings.DEFAULT_MIN_BOOKING_NOTICE_HOURS || '24', 10);
-        if (isNaN(minNoticeHours) || minNoticeHours < 0) throw new Error("Invalid system min notice hours.");
+        if (isNaN(minNoticeHours) || minNoticeHours < 0)
+            throw new Error("Invalid system min notice hours.");
 
         const minBookingDate = addHours(now, minNoticeHours);
         const maxBookingDate = addYears(now, 1);
 
+        // 1. Có eventDate và là string
         if (!this.eventDate || typeof this.eventDate !== 'string')
             throw new Error("eventDate must be a valid date string (e.g., YYYY-MM-DD).");
 
-        let parsed;
-        try {
-            parsed = parseISO(this.eventDate);
-        } catch {
+        // 2. Parse đúng ISO date
+        const parsed = parseISO(this.eventDate);
+        if (!isValidDate(parsed))
             throw new Error("eventDate must be a valid date string (e.g., YYYY-MM-DD).");
-        }
-        if (!isValidDate(parsed)) throw new Error("eventDate must be a valid date string (e.g., YYYY-MM-DD).");
 
+        // 3. Kiểm tra thời gian tối thiểu
         if (parsed.getTime() < minBookingDate.getTime() - 1000)
             throw new Error(`Event date must be at least ${minNoticeHours} hours from now.`);
 
+        // 4. Kiểm tra thời gian tối đa (1 năm)
         if (parsed > maxBookingDate)
-            throw new Error('Event date cannot be more than 1 year in advance.');
+            throw new Error("Event date cannot be more than 1 year in advance.");
     }
+
 
     async validateTimeSlot() {
         const timeSlots = {
@@ -221,7 +221,9 @@ class Booking {
                 throw new Error(`Service ID ${s.serviceID} not found in database.`);
         }
     }
+    //endRegion
 
+    //#region CALCULATION
     // ---------------- CALCULATION ----------------
 
     async calculateBasePrice(hall, menu) {
@@ -233,20 +235,28 @@ class Booking {
     }
 
     async applyPromotions(promotions) {
-        this.discountAmount = 0;
-        this.promotions = [];
+    if (!Array.isArray(promotions)) {
+        throw new TypeError("promotions must be an array");
+    }
 
-        for (const promo of promotions) {
-            if (this.tableCount >= (promo.minTable || 0)) {
+    this.discountAmount = 0;
+    this.promotions = [];
+
+    for (const promo of promotions) {
+        if (!promo || typeof promo !== "object") continue;
+
+        if (this.tableCount >= (promo.minTable || 0)) {
+            if (promo.discountType === 0 && typeof promo.discountValue === "number") {
                 this.promotions.push(promo);
-                if (promo.discountType === 0) { // percentage
-                    this.discountAmount += this.originalPrice * (promo.discountValue / 100);
-                } else if (promo.discountType === 1 && promo.freeServiceID) {
-                    this.#freeServices.add(promo.freeServiceID);
-                }
+                this.discountAmount += this.originalPrice * (promo.discountValue / 100);
+            }
+            else if (promo.discountType === 1 && promo.freeServiceID) {
+                this.promotions.push(promo);
+                this.#freeServices.add(promo.freeServiceID);
             }
         }
     }
+}
 
     async applyPaidServices(allServices) {
         const map = new Map(allServices.map(s => [s.serviceID, s]));
