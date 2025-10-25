@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">93.2% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>103/103</span>
+                <span class='fraction'>96/103</span>
             </div>
         
             
@@ -358,23 +358,23 @@
 <a name='L293'></a><a href='#L293'>293</a>
 <a name='L294'></a><a href='#L294'>294</a>
 <a name='L295'></a><a href='#L295'>295</a>
-<a name='L296'></a><a href='#L296'>296</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<a name='L296'></a><a href='#L296'>296</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">90x</span>
 <span class="cline-any cline-yes">90x</span>
 <span class="cline-any cline-yes">90x</span>
@@ -652,8 +652,8 @@
 <span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-yes">90x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span></td><td class="text"><pre class="prettyprint lang-js">import { isBefore, addHours, addYears, parseISO, formatISO, isValid as isValidDate } from 'date-fns';
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">import { isBefore, addHours, addYears, parseISO, formatISO, isValid as isValidDate } from 'date-fns';
 &nbsp;
 /**
  * Enum for booking statuses.
@@ -778,9 +778,9 @@ class Booking {
     }
 &nbsp;
     async validateEventDate(systemSettings, now = new Date()) {
-        const minNoticeHours = parseInt(systemSettings.DEFAULT_MIN_BOOKING_NOTICE_HOURS || '24', 10);
+        const minNoticeHours = parseInt(systemSettings.DEFAULT_MIN_BOOKING_NOTICE_HOURS<span class="branch-0 cbranch-no" title="branch not covered" > || '24',</span> 10);
         if (isNaN(minNoticeHours) || minNoticeHours &lt; 0)
-            throw new Error("Invalid system min notice hours.");
+<span class="branch-0 cbranch-no" title="branch not covered" >            throw new Error("Invalid system min notice hours.");</span>
 &nbsp;
         const minBookingDate = addHours(now, minNoticeHours);
         const maxBookingDate = addYears(now, 1);
@@ -812,7 +812,7 @@ class Booking {
 &nbsp;
         if (!this.startTime || !this.endTime) {
             const slot = timeSlots[this.timeSlot];
-            if (!slot) throw new Error('Invalid time slot. Must be "Buổi trưa" or "Buổi tối".');
+            if (!slot) <span class="branch-0 cbranch-no" title="branch not covered" >throw new Error('Invalid time slot. Must be "Buổi trưa" or "Buổi tối".');</span>
             this.startTime = slot.startTime;
             this.endTime = slot.endTime;
         } else {
@@ -849,7 +849,7 @@ class Booking {
 &nbsp;
         for (const dish of dishesInMenu) {
             if (!requiredByCat.has(dish.categoryID))
-                requiredByCat.set(dish.categoryID, dish.requiredQuantity || 0);
+                requiredByCat.set(dish.categoryID, dish.requiredQuantity<span class="branch-0 cbranch-no" title="branch not covered" > || 0)</span>;
         }
 &nbsp;
         for (const id of this.dishes) {
@@ -859,9 +859,9 @@ class Booking {
         }
 &nbsp;
         for (const [catID, req] of requiredByCat.entries()) {
-            const count = selectedByCat.get(catID) || 0;
+            const count = selectedByCat.get(catID)<span class="branch-0 cbranch-no" title="branch not covered" > || 0;</span>
             if (count &lt; req)
-                throw new Error(`Category ${catID} requires ${req} dishes, only ${count} selected.`);
+<span class="branch-0 cbranch-no" title="branch not covered" >                throw new Error(`Category ${catID} requires ${req} dishes, only ${count} selected.`);</span>
         }
     }
 &nbsp;
@@ -898,7 +898,7 @@ class Booking {
     this.promotions = [];
 &nbsp;
     for (const promo of promotions) {
-        if (!promo || typeof promo !== "object") continue;
+        if (!promo || typeof promo !== "object") <span class="branch-0 cbranch-no" title="branch not covered" >continue;</span>
 &nbsp;
         if (this.tableCount &gt;= (promo.minTable || 0)) {
             if (promo.discountType === 0 &amp;&amp; typeof promo.discountValue === "number") {
@@ -955,7 +955,7 @@ export default Booking;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-25T06:52:01.113Z
+                at 2025-10-25T06:56:14.572Z
             </div>
         <script src="prettify.js"></script>
         <script>
